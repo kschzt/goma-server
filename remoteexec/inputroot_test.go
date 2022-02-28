@@ -386,26 +386,26 @@ func TestInputRootDir(t *testing.T) {
 		},
 	} {
 		t.Logf("test case: %s", tc.desc)
-		paths, err := inputPaths(posixpath.FilePath{}, tc.req, tc.argv0)
+		paths, err := execPaths(posixpath.FilePath{}, tc.req, tc.argv0)
 		if tc.wantPathErr {
 			if err == nil {
-				t.Errorf("inputPaths(req, %q)=%v", tc.argv0, paths)
+				t.Errorf("execPaths(req, %q)=%v", tc.argv0, paths)
 			}
 			continue
 		}
 		t.Logf("paths=%q", paths)
 		if err != nil {
-			t.Errorf("inputPaths(req, %q)=%v, %v; want nil error", tc.argv0, paths, err)
+			t.Errorf("execPaths(req, %q)=%v, %v; want nil error", tc.argv0, paths, err)
 		}
-		got, needChroot, err := inputRootDir(posixpath.FilePath{}, paths, tc.allowChroot, tc.execRoot)
+		got, needChroot, err := deriveExecRoot(posixpath.FilePath{}, paths, tc.allowChroot, tc.execRoot)
 		if tc.wantRootErr {
 			if err == nil {
-				t.Errorf("inputRootDir(files)=%v, %t, nil; want err", got, needChroot)
+				t.Errorf("deriveExecRoot(files)=%v, %t, nil; want err", got, needChroot)
 			}
 			continue
 		}
 		if err != nil || got != tc.want || needChroot != tc.wantChroot {
-			t.Errorf("inputRootDir(files)=%v, %t, %v; want %v, %t, nil", got, needChroot, err, tc.want, tc.wantChroot)
+			t.Errorf("deriveExecRoot(files)=%v, %t, %v; want %v, %t, nil", got, needChroot, err, tc.want, tc.wantChroot)
 		}
 	}
 }

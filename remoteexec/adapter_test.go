@@ -1273,13 +1273,13 @@ func TestAdapterNsjailHardening(t *testing.T) {
 		t.Errorf("out/Release/run.sh doesn't exist")
 	} else if !runsh.isExecutable {
 		t.Errorf("out/Release/run.sh is not executable")
-	} else if want := digest.Bytes("run.sh", []byte(nsjailHardeningWrapperScript)).Digest(); !proto.Equal(runsh.digest, want) {
+	} else if want := digest.Bytes("run.sh", nsjailHardeningWrapperScript).Digest(); !proto.Equal(runsh.digest, want) {
 		t.Errorf("out/Release/run.sh digest=%s; want=%s", runsh.digest, want)
 	}
 	nsjailCfg, exists := files["out/Release/nsjail.cfg"]
 	if !exists {
 		t.Errorf("out/Release/nsjail.cfg doesn't exist")
-	} else if want := digest.Bytes("nsjail.cfg", []byte(nsjailHardeningConfig)).Digest(); !proto.Equal(nsjailCfg.digest, want) {
+	} else if want := digest.Bytes("nsjail.cfg", nsjailHardeningConfig).Digest(); !proto.Equal(nsjailCfg.digest, want) {
 		t.Errorf("out/Release/nsjail.cfg digest=%s; want=%s", nsjailCfg.digest, want)
 	}
 

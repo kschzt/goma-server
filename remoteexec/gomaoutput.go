@@ -72,6 +72,7 @@ func (g gomaOutput) stdoutData(ctx context.Context, eresp *rpb.ExecuteResponse) 
 	}
 	var buf bytes.Buffer
 	err := retryCAS(ctx, outputTimeout(eresp.Result.StdoutDigest.SizeBytes), func(ctx context.Context) error {
+		buf.Reset()
 		return cas.DownloadDigest(ctx, g.bs, &buf, g.instance, eresp.Result.StdoutDigest)
 	})
 	if err != nil {
@@ -97,6 +98,7 @@ func (g gomaOutput) stderrData(ctx context.Context, eresp *rpb.ExecuteResponse) 
 	}
 	var buf bytes.Buffer
 	err := retryCAS(ctx, outputTimeout(eresp.Result.StderrDigest.SizeBytes), func(ctx context.Context) error {
+		buf.Reset()
 		return cas.DownloadDigest(ctx, g.bs, &buf, g.instance, eresp.Result.StderrDigest)
 	})
 	if err != nil {

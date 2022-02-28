@@ -111,7 +111,7 @@ func sysrootDir(args []string) (string, bool) {
 	return sysrootDir, need
 }
 
-func inputPaths(filepath clientFilePath, req *gomapb.ExecReq, argv0 string) ([]string, error) {
+func execPaths(filepath clientFilePath, req *gomapb.ExecReq, argv0 string) ([]string, error) {
 	cwd := filepath.Clean(req.GetCwd())
 	if !filepath.IsAbs(cwd) {
 		return nil, fmt.Errorf("cwd is not abs path: %s", cwd)
@@ -147,6 +147,18 @@ func inputPaths(filepath clientFilePath, req *gomapb.ExecReq, argv0 string) ([]s
 			dir := filepath.Join(cwd, sysrootDir)
 			paths = append(paths, filepath.Clean(dir))
 		}
+	}
+	for _, output := range req.ExpectedOutputFiles {
+		if !filepath.IsAbs(output) {
+			output = filepath.Join(cwd, output)
+		}
+		paths = append(paths, filepath.Clean(output))
+	}
+	for _, output := range req.ExpectedOutputDirs {
+		if !filepath.IsAbs(output) {
+			output = filepath.Join(cwd, output)
+		}
+		paths = append(paths, filepath.Clean(output))
 	}
 	return paths, nil
 }
@@ -204,7 +216,7 @@ func getPathsWithNoCommonDir(filepath clientFilePath, paths []string) []string {
 	return nil
 }
 
-func checkInputRootDir(filepath clientFilePath, dir string) error {
+func checkExecRoot(filepath clientFilePath, dir string) error {
 	switch filepath.(type) {
 	case posixpath.FilePath:
 		// if dir covers these paths, command (e.g. clang) won't
@@ -230,11 +242,11 @@ func checkInputRootDir(filepath clientFilePath, dir string) error {
 	}
 }
 
-// inputRootDir returns common root of paths.
+// deriveExecRoot returns common root of paths.
 // if execRootDir is not empty, use it as root of paths.
 // If second return value is true, chroot must be used.  It become true only
 // if `allowChroot` is true and common input root is "/".
-func inputRootDir(filepath clientFilePath, paths []string, allowChroot bool, execRootDir string) (string, bool, error) {
+func deriveExecRoot(filepath clientFilePath, paths []string, allowChroot bool, execRootDir string) (string, bool, error) {
 	if execRootDir != "" {
 		return execRootDir, execRootDir == "/" && allowChroot, nil
 	}
@@ -250,7 +262,7 @@ func inputRootDir(filepath clientFilePath, paths []string, allowChroot bool, exe
 		pair := getPathsWithNoCommonDir(filepath, paths)
 		return "", false, fmt.Errorf("no common paths in inputs: %v", pair)
 	}
-	err := checkInputRootDir(filepath, root)
+	err := checkExecRoot(filepath, root)
 	if err != nil {
 		return "", false, err
 	}
