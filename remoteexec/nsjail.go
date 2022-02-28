@@ -5,6 +5,7 @@
 package remoteexec
 
 import (
+	_ "embed"
 	"fmt"
 	"sort"
 	"strings"
@@ -16,170 +17,22 @@ import (
 	nsjailpb "go.chromium.org/goma/server/proto/nsjail"
 )
 
-const (
-	nsjailHardeningConfig = `
-name: "hardening by nsjail (seccomp-bpf)"
-mode: ONCE
-# keep_env = true
-mount_proc: true
-# it runs in docker container, so ok to mount / as RO.
-mount <
- src: "/"
- dst: "/"
- is_bind: true
- rw: false
- is_dir: true
->
-mount <
- dst: "/tmp"
- fstype: "tmpfs"
- options: "size=5000000"
- rw: true
- is_dir: true
->
-# input root is per request, so ok to mount it as RW.
-# (does not affect to other requests).
-mount <
- prefix_src_env: "INPUT_ROOT"
- src: ""
- prefix_dst_env: "INPUT_ROOT"
- dst: ""
- is_bind: true
- rw: true
- is_dir: true
->
-# default may fail with "File too large"
-rlimit_fsize_type: INF
-rlimit_as_type: INF
-# syscalls used by clang.
-seccomp_string: "ALLOW {"
-seccomp_string: "  access,"
-seccomp_string: "  alarm,"
-seccomp_string: "  arch_prctl,"
-seccomp_string: "  brk,"
-seccomp_string: "  clone,"
-seccomp_string: "  close,"
-seccomp_string: "  connect,"
-seccomp_string: "  dup2,"
-seccomp_string: "  execve,"
-seccomp_string: "  exit_group,"
-seccomp_string: "  fcntl,"
-seccomp_string: "  fstatfs,"
-seccomp_string: "  futex,"
-seccomp_string: "  getcwd,"
-seccomp_string: "  getdents,"
-seccomp_string: "  getdents64,"
-seccomp_string: "  getegid,"
-seccomp_string: "  geteuid,"
-seccomp_string: "  getgid,"
-seccomp_string: "  getpgrp,"
-seccomp_string: "  getpid,"
-seccomp_string: "  getppid,"
-seccomp_string: "  getrlimit,"
-seccomp_string: "  gettid,"
-seccomp_string: "  getuid,"
-seccomp_string: "  ioctl,"
-seccomp_string: "  lseek,"
-seccomp_string: "  mmap,"
-seccomp_string: "  mprotect,"
-seccomp_string: "  mremap,"
-seccomp_string: "  munmap,"
-seccomp_string: "  newfstat,"
-seccomp_string: "  newlstat,"
-seccomp_string: "  newstat,"
-seccomp_string: "  newuname,"
-seccomp_string: "  open,"
-seccomp_string: "  openat,"
-seccomp_string: "  pipe,"
-seccomp_string: "  pipe2,"
-seccomp_string: "  pread64,"
-seccomp_string: "  prlimit64,"
-seccomp_string: "  read,"
-seccomp_string: "  readlink,"
-seccomp_string: "  rename,"
-seccomp_string: "  rt_sigaction,"
-seccomp_string: "  rt_sigprocmask,"
-seccomp_string: "  rt_sigreturn, "
-seccomp_string: "  set_robust_list,"
-seccomp_string: "  set_tid_address,"
-seccomp_string: "  sigaltstack,"
-seccomp_string: "  socket,"
-seccomp_string: "  sysinfo,"
-seccomp_string: "  unlink,"
-seccomp_string: "  vfork,"
-seccomp_string: "  wait4,"
-seccomp_string: "  write,"
-seccomp_string: "  writev"
-seccomp_string: "}"
-seccomp_string: "DEFAULT KILL"
-#seccomp_log: true
-iface_no_lo: true
-`
-	nsjailHardeningWrapperScript = `#!/bin/bash
-export INPUT_ROOT="$(pwd)"
-if [[ "$WORK_DIR" != "" ]]; then
-  cd "${WORK_DIR}"
-fi
-export PWD="$(pwd)"
-# exit 159 -> seccomp violation
-nsjail -q -C "./nsjail.cfg" --cwd "$PWD" \
-       --  \
-       "$@"
-`
+var (
+	//go:embed nsjail.cfg
+	nsjailHardeningConfig []byte
 
-	nsjailChrootRunWrapperScript = `#!/bin/bash
-set -e
+	//go:embed nsjail_run.sh
+	nsjailHardeningWrapperScript []byte
 
-if [[ "$WORK_DIR" == "" ]]; then
-  echo "ERROR: WORK_DIR is not set" >&2
-  exit 1
-fi
-
-rundir="$(pwd)"
-chroot_workdir="/tmp/goma_chroot"
-
-#
-# mount directories under $chroot_workdir and execute.
-#
-run_dirs=($(ls -1 "$rundir"))
-sys_dirs=(dev proc)
-
-# RBE server generates __action_home__XXXXXXXXXX directory in $rundir
-# (note: XXXXXXXXXX is a random).  Let's skip it because we do not use that.
-# mount directories in the request.
-for d in "${run_dirs[@]}"; do
-  if [[ "$d" == __action_home__* ]]; then
-    continue
-  fi
-  mkdir -p "$chroot_workdir/$d"
-  mount --bind "$rundir/$d" "$chroot_workdir/$d"
-done
-
-# mount directories not included in the request.
-for d in "${sys_dirs[@]}"; do
-  # avoid to mount system directories if that exist in the user's request.
-  if [[ -d "$rundir/$d" ]]; then
-    continue
-  fi
-  # directory will be mounted by nsjail later.
-  mkdir -p "$chroot_workdir/$d"
-done
-# needed to make nsjail bind device files.
-touch "$chroot_workdir/dev/urandom"
-touch "$chroot_workdir/dev/null"
-
-# currently running with root. run the command with nobody:nogroup with chroot.
-# We use nsjail to chdir without running bash script inside chroot, and
-# libc inside chroot can be different from libc outside.
-nsjail --quiet --config "$WORK_DIR/nsjail.cfg" -- "$@"
-`
+	//go:embed nsjail_chroot_run.sh
+	nsjailChrootRunWrapperScript []byte
 )
 
 var seccompString []string
 
 func init() {
 	m := &nsjailpb.NsJailConfig{}
-	err := prototext.Unmarshal([]byte(nsjailHardeningConfig), m)
+	err := prototext.Unmarshal(nsjailHardeningConfig, m)
 	if err != nil {
 		panic(fmt.Errorf("bad nsjailHardeningConfig: %v", err))
 	}

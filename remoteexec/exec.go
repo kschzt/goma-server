@@ -7,6 +7,7 @@ package remoteexec
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -57,7 +58,8 @@ type request struct {
 	tree        *merkletree.MerkleTree
 	input       gomaInputInterface
 
-	filepath clientFilePath
+	filepath    clientFilePath
+	cmdFilepath clientFilePath
 
 	args         []string
 	envs         []string
@@ -208,9 +210,12 @@ func (r *request) getInventoryData(ctx context.Context) *gomapb.ExecResp {
 	}
 	if cmdConfig.GetCmdDescriptor().GetCross().GetWindowsCross() {
 		r.filepath = winpath.FilePath{}
+		r.cmdFilepath = posixpath.FilePath{}
 		// drop .bat suffix
 		// http://b/185210502#comment12
 		cmdFiles[0].Path = strings.TrimSuffix(cmdFiles[0].Path, ".bat")
+	} else {
+		r.cmdFilepath = r.filepath
 	}
 
 	r.cmdConfig = cmdConfig
@@ -600,6 +605,13 @@ func (r *request) newInputTree(ctx context.Context) *gomapb.ExecResp {
 
 	symAbsOk := r.f.capabilities.GetCacheCapabilities().GetSymlinkAbsolutePathStrategy() == rpb.SymlinkAbsolutePathStrategy_ALLOWED
 
+	cmdCleanCWD := cleanCWD
+	cmdCleanRootDir := cleanRootDir
+	if (r.filepath == winpath.FilePath{}) && (r.cmdFilepath == posixpath.FilePath{}) {
+		cmdCleanCWD = winpath.ToPosix(cleanCWD)
+		cmdCleanRootDir = winpath.ToPosix(cleanRootDir)
+	}
+
 	for _, f := range r.cmdFiles {
 		if _, found := toolchainInputs[f.Path]; found {
 			// Must be processed in r.gomaReq.Input. So, skip this.
@@ -619,7 +631,7 @@ func (r *request) newInputTree(ctx context.Context) *gomapb.ExecResp {
 				return nil
 			}
 		}
-		fname, err := rootRel(r.filepath, e.Name, cleanCWD, cleanRootDir)
+		fname, err := rootRel(r.cmdFilepath, e.Name, cmdCleanCWD, cmdCleanRootDir)
 		if err != nil {
 			if err == errOutOfRoot {
 				logger.Warnf("cmd files: out of root: %s", e.Name)
@@ -726,17 +738,12 @@ func (w wrapperType) String() string {
 	}
 }
 
-const (
+var (
 	// TODO: use working_directory in action.
 	// need to fix output path to be relative to working_directory.
 	// http://b/113370588
-	wrapperScript = `#!/bin/bash
-set -e
-if [[ "$WORK_DIR" != "" ]]; then
-  cd "${WORK_DIR}"
-fi
-exec "$@"
-`
+	//go:embed run.sh
+	wrapperScript []byte
 )
 
 type badRequestError struct {
@@ -828,7 +835,7 @@ func (r *request) newWrapperScript(ctx context.Context, cmdConfig *cmdpb.Config,
 		files = []merkletree.Entry{
 			{
 				Name:         posixWrapperName,
-				Data:         digest.Bytes("nsjail-chroot-run-wrapper-script", []byte(nsjailChrootRunWrapperScript)),
+				Data:         digest.Bytes("nsjail-chroot-run-wrapper-script", nsjailChrootRunWrapperScript),
 				IsExecutable: true,
 			},
 			{
@@ -837,7 +844,7 @@ func (r *request) newWrapperScript(ctx context.Context, cmdConfig *cmdpb.Config,
 			},
 		}
 	case wrapperInputRootAbsolutePath:
-		wrapperData := digest.Bytes("wrapper-script", []byte(wrapperScript))
+		wrapperData := digest.Bytes("wrapper-script", wrapperScript)
 		files, wrapperData = r.maybeApplyHardening(ctx, "InputRootAbsolutePath", files, wrapperData)
 		// https://cloud.google.com/remote-build-execution/docs/remote-execution-properties#container_properties
 		rootDir := r.tree.RootDir()
@@ -862,7 +869,7 @@ func (r *request) newWrapperScript(ctx context.Context, cmdConfig *cmdpb.Config,
 			},
 		}, files...)
 	case wrapperRelocatable:
-		wrapperData := digest.Bytes("wrapper-script", []byte(wrapperScript))
+		wrapperData := digest.Bytes("wrapper-script", wrapperScript)
 		files, wrapperData = r.maybeApplyHardening(ctx, "chdir: relocatble", files, wrapperData)
 		for _, e := range r.gomaReq.Env {
 			if strings.HasPrefix(e, "PWD=") {
@@ -975,12 +982,12 @@ func (r *request) maybeApplyHardening(ctx context.Context, wt string, files []me
 	} else if rand.Float64() < r.f.HardeningRatio {
 		if rand.Float64() < r.f.NsjailRatio {
 			logger.Infof("run with %s + nsjail", wt)
-			wrapperData = digest.Bytes("nsjail-hardening-wrapper-scrpt", []byte(nsjailHardeningWrapperScript))
+			wrapperData = digest.Bytes("nsjail-hardening-wrapper-scrpt", nsjailHardeningWrapperScript)
 			// needed for nsjail
 			r.addPlatformProperty(ctx, "dockerPrivileged", "true")
 			files = append(files, merkletree.Entry{
 				Name: "nsjail.cfg",
-				Data: digest.Bytes("nsjail.cfg", []byte(nsjailHardeningConfig)),
+				Data: digest.Bytes("nsjail.cfg", nsjailHardeningConfig),
 			})
 		} else {
 			logger.Infof("run with %s + runsc", wt)

@@ -136,7 +136,7 @@ func TestPathFromToolchainSpec(t *testing.T) {
 
 func TestNsjailHardeningConfig(t *testing.T) {
 	cfg := &nsjailpb.NsJailConfig{}
-	err := prototext.Unmarshal([]byte(nsjailHardeningConfig), cfg)
+	err := prototext.Unmarshal(nsjailHardeningConfig, cfg)
 	if err != nil {
 		t.Errorf("unmarshal\n%s\n => %v", nsjailHardeningConfig, err)
 	}

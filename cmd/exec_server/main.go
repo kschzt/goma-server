@@ -74,6 +74,7 @@ var (
 
 	// http://b/141901653
 	execMaxRetryCount = flag.Int("exec-max-retry-count", 5, "max retry count for exec call. 0 is unlimited count, but bound to ctx timtout. Use small number for powerful clients to run local fallback quickly. Use large number for powerless clients to use remote more than local.")
+	execActionTimeout = flag.Duration("exec-action-timeout", 15*time.Minute, "action timeout after which the execution should be killed.")
 
 	cmdFilesBucket      = flag.String("cmd-files-bucket", "", "cloud storage bucket for command binary files")
 	fetchConfigParallel = flag.Bool("fetch-config-parallel", true, "fetch toolchain configs in parallel")
@@ -460,7 +461,7 @@ func main() {
 	re := &remoteexec.Adapter{
 		InstancePrefix:   *remoteInstancePrefix,
 		InstanceBaseName: *remoteInstanceBaseName,
-		ExecTimeout:      15 * time.Minute,
+		ExecTimeout:      *execActionTimeout,
 		SpanTimeout:      spanTimeout,
 		Client: remoteexec.Client{
 			ClientConn: reConn,

@@ -348,6 +348,7 @@ func (f *fakeLocalFiles) Open(fname string) (io.Reader, error) {
 
 // mustFileHash returns SHA256 hash of file content.
 func (f *fakeLocalFiles) mustFileHash(ctx context.Context, t *testing.T, fname string) string {
+	t.Helper()
 	data, ok := f.m[fname]
 	if !ok {
 		t.Fatalf("%s not found", fname)
