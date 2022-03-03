@@ -5,10 +5,12 @@ package redis
 import (
 	"context"
 	"flag"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"go.uber.org/zap"
 
 	"go.chromium.org/goma/server/log"
@@ -66,4 +68,78 @@ func BenchmarkGet(b *testing.B) {
 	mu.Lock()
 	b.Logf("nerrs=%d", nerrs)
 	mu.Unlock()
+}
+
+func TestSetNonZeroTTL(t *testing.T) {
+	expectedKey := "test_key"
+	expectedValue := "test_value"
+	expectedTTL := 5 * time.Millisecond
+
+	log.SetZapLogger(zap.NewNop())
+	s := NewFakeServer(t)
+
+	ctx := context.Background()
+	c := NewClient(ctx, s.Addr().String(), Opts{
+		MaxIdleConns:   DefaultMaxIdleConns,
+		MaxActiveConns: DefaultMaxActiveConns,
+		EntryTTL:       expectedTTL,
+	})
+	defer func() {
+		if err := c.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	_, err := c.Put(ctx, &pb.PutReq{
+		Kv: &pb.KV{
+			Key:   expectedKey,
+			Value: []byte(expectedValue),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{"SET", expectedKey, expectedValue, "PX", strconv.FormatInt(expectedTTL.Milliseconds(), 10)}
+	got := s.lastRequest()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("lastRequest() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestSetZeroTTL(t *testing.T) {
+	expectedKey := "test_key"
+	expectedValue := "test_value"
+	expectedTTL := 0 * time.Millisecond
+
+	log.SetZapLogger(zap.NewNop())
+	s := NewFakeServer(t)
+
+	ctx := context.Background()
+	c := NewClient(ctx, s.Addr().String(), Opts{
+		MaxIdleConns:   DefaultMaxIdleConns,
+		MaxActiveConns: DefaultMaxActiveConns,
+		EntryTTL:       expectedTTL,
+	})
+	defer func() {
+		if err := c.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	_, err := c.Put(ctx, &pb.PutReq{
+		Kv: &pb.KV{
+			Key:   expectedKey,
+			Value: []byte(expectedValue),
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []string{"SET", expectedKey, expectedValue}
+	got := s.lastRequest()
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("lastRequest() mismatch (-want +got):\n%s", diff)
+	}
 }

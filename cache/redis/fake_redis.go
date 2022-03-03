@@ -13,8 +13,9 @@ import (
 
 // FakeServer is a fake redis server for stress test.
 type FakeServer struct {
-	ln net.Listener
-	tb testing.TB
+	ln   net.Listener
+	tb   testing.TB
+	last []string
 }
 
 // NewFakeServer starts a new fake redis server.
@@ -53,19 +54,23 @@ func (s *FakeServer) handle(conn net.Conn) {
 	defer conn.Close()
 	b := bufio.NewReader(conn)
 	for {
-		_, err := s.readRequest(b)
+		request, err := s.readRequest(b)
 		if err != nil {
 			return
 		}
-		// s.tb.Logf("request: %q", line)
-		// assume GET
-		// *2\r\n$3\r\nGET\r\n$3\r\nkey\r\n
+		s.last = request
+		s.tb.Logf("request: %q", request)
 
-		conn.Write([]byte("$10\r\n0123456789\r\n"))
+		if len(request) > 0 && request[0] == "SET" {
+			conn.Write([]byte("+OK\r\n"))
+		} else {
+			// assume GET
+			conn.Write([]byte("$10\r\n0123456789\r\n"))
+		}
 	}
 }
 
-func (s *FakeServer) readRequest(r *bufio.Reader) ([]byte, error) {
+func (s *FakeServer) readRequest(r *bufio.Reader) ([]string, error) {
 	var line []byte
 	nline, _, err := r.ReadLine()
 	if err != nil {
@@ -73,17 +78,18 @@ func (s *FakeServer) readRequest(r *bufio.Reader) ([]byte, error) {
 	}
 	line = append(line, nline...)
 	if !bytes.HasPrefix(nline, []byte("*")) {
-		return line, err
+		return nil, err
 	}
 	// *<n> array
 	n, err := strconv.Atoi(string(nline[1:]))
 	if err != nil {
-		return line, fmt.Errorf("wrong array %q: %v", nline, err)
+		return nil, fmt.Errorf("wrong array %q: %v", nline, err)
 	}
+	var request []string
 	for i := 0; i < n; i++ {
 		nline, _, err := r.ReadLine()
 		if err != nil {
-			return line, err
+			return nil, err
 		}
 		line = append(line, '\n')
 		line = append(line, nline...)
@@ -93,17 +99,22 @@ func (s *FakeServer) readRequest(r *bufio.Reader) ([]byte, error) {
 		// $<n>\r\n<value>\r\n
 		sz, err := strconv.Atoi(string(nline[1:]))
 		if err != nil {
-			return line, fmt.Errorf("wrong bytes %q: %v", nline, err)
+			return nil, fmt.Errorf("wrong bytes %q: %v", nline, err)
 		}
 		nline, _, err = r.ReadLine()
 		if err != nil {
-			return line, err
+			return nil, err
 		}
 		line = append(line, '\n')
 		line = append(line, nline...)
 		if sz != len(nline) {
-			return line, fmt.Errorf("unexpected value sz=%d v=%q", sz, nline)
+			return nil, fmt.Errorf("unexpected value sz=%d v=%q", sz, nline)
 		}
+		request = append(request, string(nline))
 	}
-	return line, nil
+	return request, nil
+}
+
+func (s *FakeServer) lastRequest() []string {
+	return s.last
 }

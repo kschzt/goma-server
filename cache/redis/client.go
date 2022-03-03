@@ -30,6 +30,7 @@ type Client struct {
 
 	// to workaround pool.wait. maintain active conns.
 	sema chan struct{}
+	ttl  time.Duration
 }
 
 // AddrFromEnv returns redis server address from environment variables.
@@ -55,6 +56,9 @@ type Opts struct {
 
 	// MaxActiveConns is max number of active connections.
 	MaxActiveConns int
+
+	// EntryTTL sets the expiration time of an entry, 0 means entry will never expire.
+	EntryTTL time.Duration
 }
 
 // default max number of connections.
@@ -78,6 +82,7 @@ func NewClient(ctx context.Context, addr string, opts Opts) Client {
 			Wait: false,
 		},
 		sema: make(chan struct{}, opts.MaxActiveConns),
+		ttl:  opts.EntryTTL,
 	}
 }
 
@@ -204,7 +209,13 @@ func (c Client) Put(ctx context.Context, in *pb.PutReq, opts ...grpc.CallOption)
 	err = rpc.Retry{
 		MaxRetry: -1,
 	}.Do(ctx, func() error {
-		_, err := conn.Do("SET", c.prefix+in.Kv.Key, in.Kv.Value)
+		args := redis.Args{}.Add(c.prefix+in.Kv.Key, in.Kv.Value)
+		ttlMs := c.ttl.Milliseconds()
+		if ttlMs > 0 {
+			args = args.Add("PX", ttlMs)
+		}
+		_, err := conn.Do("SET", args...)
+
 		return retryErr(err)
 	})
 	if err != nil {
