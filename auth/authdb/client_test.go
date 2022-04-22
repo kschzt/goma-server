@@ -10,8 +10,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
 	"go.chromium.org/goma/server/httprpc"
@@ -52,6 +52,7 @@ func TestClient(t *testing.T) {
 		resp         bool
 		respErrs     []error
 		want         bool
+		wantErr      bool
 	}{
 		{
 			desc:  "ok",
@@ -72,7 +73,7 @@ func TestClient(t *testing.T) {
 			email:    "someone@google.com",
 			group:    "goma-googlers",
 			resp:     true,
-			respErrs: []error{grpc.Errorf(codes.Unavailable, "unavailable")},
+			respErrs: []error{status.Errorf(codes.Unavailable, "unavailable")},
 			want:     true,
 		},
 		{
@@ -80,7 +81,7 @@ func TestClient(t *testing.T) {
 			email:    "someone@google.com",
 			group:    "goma-googlers",
 			resp:     false,
-			respErrs: []error{grpc.Errorf(codes.Unavailable, "unavailable")},
+			respErrs: []error{status.Errorf(codes.Unavailable, "unavailable")},
 			want:     false,
 		},
 		{
@@ -88,8 +89,8 @@ func TestClient(t *testing.T) {
 			email:    "someone@google.com",
 			group:    "goma-googlers",
 			resp:     true,
-			respErrs: []error{grpc.Errorf(codes.InvalidArgument, "bad request")},
-			want:     false,
+			respErrs: []error{status.Errorf(codes.InvalidArgument, "bad request")},
+			wantErr:  true,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
@@ -110,9 +111,16 @@ func TestClient(t *testing.T) {
 					URL:    s.URL + "/authdb/checkMembership",
 				},
 			}
-			got := c.IsMember(ctx, tc.email, tc.group)
-			if got != tc.want {
-				t.Errorf("IsMember(ctx, %q, %q)=%t; want=%t", tc.email, tc.group, got, tc.want)
+			got, err := c.IsMember(ctx, tc.email, tc.group)
+			if tc.wantErr {
+				if err == nil {
+					t.Errorf("IsMember(ctx, %q, %q)=%v, nil; want=false, err", tc.email, tc.group, got)
+					return
+				}
+				return
+			}
+			if err != nil || got != tc.want {
+				t.Errorf("IsMember(ctx, %q, %q)=%v, %v; want=%v, false", tc.email, tc.group, got, err, tc.want)
 			}
 		})
 	}

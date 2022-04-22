@@ -119,6 +119,7 @@ func (s *Service) Auth(ctx context.Context, req *authpb.AuthReq) (*authpb.AuthRe
 					// set 1 second negative cache.
 					ExpiresAt: time.Now().Add(1 * time.Second),
 				}
+				err = nil
 			}
 			if te.TokenInfo.Err == nil {
 				te.Group, te.Token, err = s.checkToken(ctx, token, te.TokenInfo)
@@ -145,11 +146,16 @@ func (s *Service) Auth(ctx context.Context, req *authpb.AuthReq) (*authpb.AuthRe
 				s.mu.Unlock()
 			default:
 				// don't cache other error data.
+				return te, err
 			}
 			return te, nil
 		})
 		if err != nil {
 			logger.Errorf("auth error: %v", err)
+			switch c := status.Code(err); c {
+			case codes.DeadlineExceeded, codes.Unavailable, codes.Canceled:
+				return nil, grpc.Errorf(c, "auth error: %v", err)
+			}
 			return nil, grpc.Errorf(codes.Internal, "auth error: %v", err)
 		}
 		te = v.(*tokenCacheEntry)

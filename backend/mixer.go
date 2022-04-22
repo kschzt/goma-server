@@ -161,7 +161,7 @@ func (m Mixer) dispatcher(handler func(Backend) http.Handler) http.Handler {
 		}
 		user, ok := enduser.FromContext(ctx)
 		if !ok {
-			code := http.StatusInternalServerError
+			code := http.StatusForbidden
 			http.Error(w, "no enduser info available", code)
 			logger.Errorf("server error %s: %d %s: no enduser in context", req.URL.Path, code, http.StatusText(code))
 			return
@@ -170,7 +170,7 @@ func (m Mixer) dispatcher(handler func(Backend) http.Handler) http.Handler {
 		backend, found := m.selectBackend(ctx, user.Group, q)
 		if !found {
 			logger.Errorf("no backend config for group:%q query:%q", user.Group, q.Encode())
-			http.Error(w, "no backend config", http.StatusInternalServerError)
+			http.Error(w, "no backend config", http.StatusForbidden)
 			return
 		}
 		h := handler(backend)

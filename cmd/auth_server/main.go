@@ -172,9 +172,6 @@ func main() {
 			}
 			logger.Infof("use authdb: %s", *authDBAddr)
 		}
-		if *serviceAccountJSONDir == "" {
-			logger.Fatalf("--service-account-json-dir must be given for acl")
-		}
 		a := acl.ACL{
 			Loader: acl.FileLoader{
 				Filename: *aclFile,

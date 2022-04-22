@@ -232,7 +232,7 @@ Loop:
 		case strings.HasPrefix(arg, "/clang:"): // Clang-specific option
 		case strings.HasPrefix(arg, "/guard:cf"): // Control flow guard security checks
 		case strings.HasPrefix(arg, "/showIncludes:"): // List include files
-		case strings.HasPrefix(arg, "/std:c++"): // Specify C++ standard
+		case strings.HasPrefix(arg, "/std:c"): // Specify C or C++ standard
 		case isClangclWarningFlag(arg): // Flags to handle warnings
 		case isClangclOptimizationFlag(arg): // Flags to handle optimization
 			continue
@@ -322,6 +322,7 @@ func clangclArgRelocatable(filepath clientFilePath, args []string) error {
 			skipFlag = true
 			continue
 		case strings.HasPrefix(arg, "-f"): // feature
+		case arg == "-no-opaque-pointers":
 		default:
 			return unknownFlagError{arg: fmt.Sprintf("clang-cl: %s", arg)}
 		}

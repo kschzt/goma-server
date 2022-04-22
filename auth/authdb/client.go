@@ -20,7 +20,7 @@ type Client struct {
 }
 
 // IsMember checks email is in group.
-func (c Client) IsMember(ctx context.Context, email, group string) bool {
+func (c Client) IsMember(ctx context.Context, email, group string) (bool, error) {
 	logger := log.FromContext(ctx)
 
 	req := &pb.CheckMembershipReq{
@@ -35,7 +35,7 @@ func (c Client) IsMember(ctx context.Context, email, group string) bool {
 	})
 	if err != nil {
 		logger.Errorf("check membership: %v", err)
-		return false
+		return false, err
 	}
-	return resp.IsMember
+	return resp.IsMember, nil
 }

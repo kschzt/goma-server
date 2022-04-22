@@ -406,6 +406,12 @@ func TestGccRelocatableReq(t *testing.T) {
 			relocatable: true,
 		},
 		{
+			desc: "-Xclang -no-opaque-pointers",
+			args: append(append([]string{}, baseReleaseArgs...),
+				"-Xclang", "-no-opaque-pointers"),
+			relocatable: true,
+		},
+		{
 			desc: "-mllvm -sanitizer-coverage-prune-blocks=1",
 			args: append(append([]string{}, baseReleaseArgs...),
 				"-mllvm", "-sanitizer-coverage-prune-blocks=1"),
@@ -439,6 +445,12 @@ func TestGccRelocatableReq(t *testing.T) {
 			desc: "-mllvm -enable-dse-memoryssa=false",
 			args: append(append([]string{}, baseReleaseArgs...),
 				"-mllvm", "-enable-dse-memoryssa=false"),
+			relocatable: true,
+		},
+		{
+			desc: "-mllvm -limited-coverage-experimental=true",
+			args: append(append([]string{}, baseReleaseArgs...),
+				"-mllvm", "-limited-coverage-experimental=true"),
 			relocatable: true,
 		},
 		{

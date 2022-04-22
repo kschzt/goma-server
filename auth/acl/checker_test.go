@@ -201,8 +201,8 @@ type fakeAuthDB struct {
 	db map[string]bool
 }
 
-func (f fakeAuthDB) IsMember(ctx context.Context, email, group string) bool {
-	return f.db[email+":"+group]
+func (f fakeAuthDB) IsMember(ctx context.Context, email, group string) (bool, error) {
+	return f.db[email+":"+group], nil
 }
 
 func TestCheckGroup(t *testing.T) {
@@ -352,9 +352,9 @@ func TestCheckGroup(t *testing.T) {
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
-			got := checkGroup(ctx, tc.tokenInfo, tc.g, authDB)
-			if got != tc.want {
-				t.Errorf("checkGroup(ctx, tokenInfo, group, authDB)=%t; want=%t", got, tc.want)
+			got, err := checkGroup(ctx, tc.tokenInfo, tc.g, authDB)
+			if got != tc.want || err != nil {
+				t.Errorf("checkGroup(ctx, tokenInfo, group, authDB)=%t, %v; want=%t, nil", got, err, tc.want)
 			}
 		})
 	}

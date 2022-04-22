@@ -12,7 +12,7 @@ import (
 
 // AuthDB is authentication database.
 type AuthDB interface {
-	IsMember(ctx context.Context, email, group string) bool
+	IsMember(ctx context.Context, email, group string) (bool, error)
 }
 
 // Handler handles request to AuthDB.
@@ -22,7 +22,8 @@ type Handler struct {
 }
 
 func (h Handler) CheckMembership(ctx context.Context, req *pb.CheckMembershipReq) (*pb.CheckMembershipResp, error) {
+	ok, err := h.AuthDB.IsMember(ctx, req.Email, req.Group)
 	return &pb.CheckMembershipResp{
-		IsMember: h.AuthDB.IsMember(ctx, req.Email, req.Group),
-	}, nil
+		IsMember: ok,
+	}, err
 }

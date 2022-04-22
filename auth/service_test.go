@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	authpb "go.chromium.org/goma/server/proto/auth"
@@ -145,7 +147,7 @@ func TestServiceExpire(t *testing.T) {
 
 // TODO: revise this when we implement ACL
 func TestAuth(t *testing.T) {
-	// 0. access succeeds by cache
+	t.Logf("0. access succeeds by cache")
 	email := "example@google.com"
 	expiresAt := time.Now().Add(10 * time.Second)
 	ptypeExpiresAt := timestamppb.New(expiresAt)
@@ -196,7 +198,7 @@ func TestAuth(t *testing.T) {
 		t.Errorf("Auth(%q)=%q; want %q", req, resp, want)
 	}
 
-	// 1. access succeeds by fetching token info.
+	t.Logf("1. access succeeds by fetching token info.")
 	s1 := &Service{
 		CheckToken: checkToken,
 		fetchInfo: func(ctx context.Context, token *oauth2.Token) (*TokenInfo, error) {
@@ -215,7 +217,7 @@ func TestAuth(t *testing.T) {
 		t.Errorf(`tokenCache[%q].TokenInfo=%q; want %q`, key, entry.TokenInfo, ti)
 	}
 
-	// 2. failed to fetch token info.
+	t.Logf("2. failed to fetch token info.")
 	s2 := &Service{
 		CheckToken: checkToken,
 		fetchInfo: func(ctx context.Context, token *oauth2.Token) (*TokenInfo, error) {
@@ -233,11 +235,11 @@ func TestAuth(t *testing.T) {
 		t.Errorf("Auth(%q).ErrorDescription=%q; want non empty", req, resp.ErrorDescription)
 	}
 
-	// 3. non-allowed user access
+	t.Logf("3. non-allowed user access")
 	s3 := &Service{
 		CheckToken: func(ctx context.Context, token *oauth2.Token, tokenInfo *TokenInfo) (string, *oauth2.Token, error) {
 			if !strings.HasSuffix(tokenInfo.Email, "@google.com") {
-				return "", token, errors.New("not allowed")
+				return "", token, status.Errorf(codes.PermissionDenied, "not allowed")
 			}
 			return "", token, nil
 
@@ -253,10 +255,34 @@ func TestAuth(t *testing.T) {
 	if err != nil {
 		t.Errorf("Auth(%q) error %v; want nil error", req, err)
 	}
-	if resp.Quota != 0 {
-		t.Errorf("Auth(%q).Quota=%d; want 0", req, resp.Quota)
+	if resp == nil {
+		t.Errorf("Auth(%q)=nil, want non-nil resp", req)
+	} else {
+		if resp.Quota != 0 {
+			t.Errorf("Auth(%q).Quota=%d; want 0", req, resp.Quota)
+		}
+		if resp.ErrorDescription == "" {
+			t.Errorf("Auth(%q).ErrorDescription=%q; want non empty", req, resp.ErrorDescription)
+		}
 	}
-	if resp.ErrorDescription == "" {
-		t.Errorf("Auth(%q).ErrorDescription=%q; want non empty", req, resp.ErrorDescription)
+	t.Logf("4. failed membership check")
+	s4 := &Service{
+		CheckToken: func(ctx context.Context, token *oauth2.Token, tokenInfo *TokenInfo) (string, *oauth2.Token, error) {
+			if tokenInfo.Email == "misfortune@example.com" {
+				return "", token, status.Errorf(codes.DeadlineExceeded, "deadline exceeded")
+			}
+			return "", token, nil
+
+		},
+		fetchInfo: func(ctx context.Context, token *oauth2.Token) (*TokenInfo, error) {
+			return &TokenInfo{
+				Email:     "misfortune@example.com",
+				ExpiresAt: expiresAt,
+			}, nil
+		},
+	}
+	resp, err = s4.Auth(context.Background(), req)
+	if err == nil {
+		t.Errorf("Auth(%q)=%v, %v; want error", req, resp, err)
 	}
 }

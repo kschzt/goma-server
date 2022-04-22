@@ -293,6 +293,12 @@ func TestClangclRelocatableReq(t *testing.T) {
 			relocatable: true,
 		},
 		{
+			desc: "-Xclang -no-opaque-pointers",
+			args: append(append([]string{}, baseReleaseArgs...),
+				"-Xclang", "-no-opaque-pointers"),
+			relocatable: true,
+		},
+		{
 			desc: "-mllvm -instcombine-lower-dbg-declare=0",
 			args: append(append([]string{}, baseReleaseArgs...),
 				"-mllvm", "-instcombine-lower-dbg-declare=0"),
@@ -357,6 +363,18 @@ func TestClangclRelocatableReq(t *testing.T) {
 			args: append(append([]string{}, baseReleaseArgs...),
 				`/winsdkdirC:\src\chromium\src\third_party\depot_tools\win_toolchain\vs_files\20d5f253f\win_sdk`),
 			relocatable: false,
+		},
+		{
+			desc: "/std:c++17",
+			args: append(append([]string{}, baseReleaseArgs...),
+				"/std:c++17"),
+			relocatable: true,
+		},
+		{
+			desc: "/std:c11",
+			args: append(append([]string{}, baseReleaseArgs...),
+				"/std:c11"),
+			relocatable: true,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

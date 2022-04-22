@@ -6,6 +6,7 @@ package acl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -24,7 +25,7 @@ import (
 
 // AuthDB provides authentication database; user groups.
 type AuthDB interface {
-	IsMember(ctx context.Context, email, group string) bool
+	IsMember(ctx context.Context, email, group string) (bool, error)
 }
 
 // Checker checks token.
@@ -85,18 +86,27 @@ func (c *Checker) Set(ctx context.Context, config *pb.ACL) error {
 	return nil
 }
 
+var errNoMatchingGroup = errors.New("no matching group")
+
 // FindGroup finds a group for tokenInfo.
 func (c *Checker) FindGroup(ctx context.Context, tokenInfo *auth.TokenInfo) (*pb.Group, error) {
+	logger := log.FromContext(ctx)
+
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
 	for _, g := range c.config.GetGroups() {
-		if !checkGroup(ctx, tokenInfo, g, c.AuthDB) {
+		ok, err := checkGroup(ctx, tokenInfo, g, c.AuthDB)
+		if err != nil {
+			logger.Errorf("filed to check group %s for %q %q: %v", g.Id, tokenInfo.Email, tokenInfo.Audience, err)
+			return nil, err
+		}
+		if !ok {
 			continue
 		}
 		return g, nil
 	}
-	return nil, fmt.Errorf("no group for %q %q", tokenInfo.Email, tokenInfo.Audience)
+	return nil, fmt.Errorf("no group for %q %q: %w", tokenInfo.Email, tokenInfo.Audience, errNoMatchingGroup)
 }
 
 // CheckToken checks token and returns group id and token used for backend API.
@@ -111,8 +121,19 @@ func (c *Checker) CheckToken(ctx context.Context, token *oauth2.Token, tokenInfo
 			logger.Errorf("acl check context error: %v", err)
 			return "", nil, err
 		}
-		logger.Errorf("no acl match: %v", err)
-		return "", nil, grpc.Errorf(codes.PermissionDenied, "access rejected")
+		switch {
+		case errors.Is(err, context.DeadlineExceeded):
+			logger.Errorf("acl check deadline exceeded: %v", err)
+			return "", nil, status.Errorf(codes.DeadlineExceeded, "find group failed: %v", err)
+		case errors.Is(err, context.Canceled):
+			logger.Errorf("acl check canceled: %v", err)
+			return "", nil, status.Errorf(codes.Canceled, "find group canceled: %v", err)
+		case errors.Is(err, errNoMatchingGroup):
+			logger.Errorf("no acl match: %v", err)
+			return "", nil, status.Errorf(codes.PermissionDenied, "access rejected")
+		}
+		logger.Errorf("acl check backend err: %v", err)
+		return "", nil, err
 	}
 
 	logger.Debugf("in group:%s", g.Id)
@@ -139,27 +160,31 @@ func (c *Checker) CheckToken(ctx context.Context, token *oauth2.Token, tokenInfo
 	return g.Id, saToken, nil
 }
 
-func checkGroup(ctx context.Context, tokenInfo *auth.TokenInfo, g *pb.Group, authDB AuthDB) bool {
+func checkGroup(ctx context.Context, tokenInfo *auth.TokenInfo, g *pb.Group, authDB AuthDB) (bool, error) {
 	logger := log.FromContext(ctx)
 	logger.Debugf("checking group:%s", g.Id)
 	if g.Audience != "" {
 		if tokenInfo.Audience != g.Audience {
 			logger.Debugf("audience mismatch: %s != %s", tokenInfo.Audience, g.Audience)
-			return false
+			return false, nil
 		}
 	}
 	if len(g.Emails) == 0 && len(g.Domains) == 0 && authDB != nil {
-		if !authDB.IsMember(ctx, tokenInfo.Email, g.Id) {
-			logger.Debugf("not member in authdb group:%s", g.Id)
-			return false
+		ok, err := authDB.IsMember(ctx, tokenInfo.Email, g.Id)
+		if err != nil {
+			logger.Warnf("authdb lookup error:%s: %v", g.Id, err)
+			return false, err
 		}
-		return true
+		if !ok {
+			logger.Debugf("not member in authdb group:%", g.Id)
+		}
+		return ok, nil
 	}
 	if !match(tokenInfo.Email, g.Emails, g.Domains) {
 		logger.Debugf("emails/domains mismatch: client email not in group %s", g.Id)
-		return false
+		return false, nil
 	}
-	return true
+	return true, nil
 }
 
 func match(email string, emails, domains []string) bool {

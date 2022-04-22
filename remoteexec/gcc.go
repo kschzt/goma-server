@@ -190,7 +190,7 @@ Loop:
 
 		case arg == "-o":
 			pathFlag = true
-		case arg == "-I" || arg == "-B" || arg == "-F" || arg == "-isystem" || arg == "-include":
+		case arg == "-I" || arg == "-B" || arg == "-F" || arg == "-isystem" || arg == "-include" || arg == "-iframework":
 			pathFlag = true
 		case arg == "-MF":
 			pathFlag = true
@@ -275,6 +275,7 @@ func clangArgRelocatable(filepath clientFilePath, args []string) error {
 			pathFlag = true
 		case strings.HasPrefix(arg, "-f"): // feature
 		case strings.HasPrefix(arg, "-debug-info-kind="):
+		case arg == "-no-opaque-pointers":
 		default:
 			return unknownFlagError{arg: fmt.Sprintf("clang: %s", arg)}
 		}
@@ -335,6 +336,10 @@ func llvmArgRelocatable(filepath clientFilePath, args []string) error {
 			if filepath.IsAbs(arg[len("-ml-inliner-model-under-training="):]) {
 				return fmt.Errorf("abs path: %s", arg)
 			}
+
+		case strings.HasPrefix(arg, "-limited-coverage-experimental="):
+			// b/229939600 -limited-coverage-experimental=true
+			// doesn't take a path related value.
 
 		default:
 			return unknownFlagError{arg: fmt.Sprintf("llvm: %s", arg)}
