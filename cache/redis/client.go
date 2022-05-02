@@ -184,7 +184,12 @@ func (c Client) Get(ctx context.Context, in *pb.GetReq, opts ...grpc.CallOption)
 	err = rpc.Retry{
 		MaxRetry: -1,
 	}.Do(ctx, func() error {
-		v, err = redis.Bytes(conn.Do("GET", c.prefix+in.Key))
+		ttlMs := c.ttl.Milliseconds()
+		if ttlMs > 0 {
+			v, err = redis.Bytes(conn.Do("GETEX", c.prefix+in.Key, "PX", ttlMs))
+		} else {
+			v, err = redis.Bytes(conn.Do("GET", c.prefix+in.Key))
+		}
 		return retryErr(err)
 	})
 	if err != nil {
