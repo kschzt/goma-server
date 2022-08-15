@@ -73,8 +73,9 @@ var (
 	remoteInstanceBaseName = flag.String("remote-instance-basename", "default_instance", "remote instance basename under remote-instance-prefix")
 
 	// http://b/141901653
-	execMaxRetryCount = flag.Int("exec-max-retry-count", 5, "max retry count for exec call. 0 is unlimited count, but bound to ctx timtout. Use small number for powerful clients to run local fallback quickly. Use large number for powerless clients to use remote more than local.")
-	execActionTimeout = flag.Duration("exec-action-timeout", 15*time.Minute, "action timeout after which the execution should be killed.")
+	execMaxRetryCount     = flag.Int("exec-max-retry-count", 5, "max retry count for exec call. 0 is unlimited count, but bound to ctx timtout. Use small number for powerful clients to run local fallback quickly. Use large number for powerless clients to use remote more than local.")
+	execMissingInputLimit = flag.Int("exec-missing-input-limit", 100, "max missing inputs per exec call response. 0 is unlimited, meaning the client will be told about all missing inputs.")
+	execActionTimeout     = flag.Duration("exec-action-timeout", 15*time.Minute, "action timeout after which the execution should be killed.")
 
 	cmdFilesBucket      = flag.String("cmd-files-bucket", "", "cloud storage bucket for command binary files")
 	fetchConfigParallel = flag.Bool("fetch-config-parallel", true, "fetch toolchain configs in parallel")
@@ -481,6 +482,7 @@ func main() {
 		HardeningRatio:    *experimentHardeningRatio,
 		NsjailRatio:       *experimentNsjailRatio,
 		DisableHardenings: strings.Split(*disableHardenings, ","),
+		MissingInputLimit: *execMissingInputLimit,
 	}
 	logger.Infof("hardeniong=%f nsjail=%f", re.HardeningRatio, re.NsjailRatio)
 

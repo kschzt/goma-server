@@ -72,6 +72,7 @@ var (
 	insecureSkipVerify       = flag.Bool("insecure-skip-verify", false, "insecure skip verifying the server certificate")
 	additionalTLSCertificate = flag.String("additional-tls-certificate", "", "additional TLS root certificate for verifying the server certificate")
 	execMaxRetryCount        = flag.Int("exec-max-retry-count", 5, "max retry count for exec call. 0 is unlimited count, but bound to ctx timtout. Use small number for powerful clients to run local fallback quickly. Use large number for powerless clients to use remote more than local.")
+	execMissingInputLimit    = flag.Int("exec-missing-input-limit", 100, "max missing inputs per exec call response. 0 is unlimited, meaning the client will be told about all missing inputs.")
 
 	fileCacheBucket = flag.String("file-cache-bucket", "", "file cache bucking store bucket")
 
@@ -439,6 +440,7 @@ func main() {
 		},
 		FileLookupSema:    make(chan struct{}, 2),
 		CASBlobLookupSema: make(chan struct{}, 20),
+		MissingInputLimit: *execMissingInputLimit,
 	}
 
 	configResp := &cmdpb.ConfigResp{

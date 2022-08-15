@@ -583,7 +583,7 @@ func (r *request) newInputTree(ctx context.Context) *gomapb.ExecResp {
 
 		r.gomaResp.MissingInput = missingInputs
 		r.gomaResp.MissingReason = missingReason
-		thinOutMissing(r.gomaResp, missingInputLimit)
+		thinOutMissing(r.gomaResp, r.f.MissingInputLimit)
 		sortMissing(r.gomaReq.Input, r.gomaResp)
 		logFileList(logger, "missing inputs", r.gomaResp.MissingInput)
 		return r.gomaResp
@@ -1357,13 +1357,10 @@ func sortMissing(inputs []*gomapb.ExecReq_Input, resp *gomapb.ExecResp) {
 	})
 }
 
-// The server does not report more than this size as missing inputs to avoid DoS from Goma client.
-const missingInputLimit = 100
-
 // thinOutMissing thins out missint inputs if it is more than limit.
 // Note: sortMissing should be called after this to preserve the file name order.
 func thinOutMissing(resp *gomapb.ExecResp, limit int) {
-	if len(resp.MissingInput) < limit { // no need to thin out.
+	if limit == 0 || len(resp.MissingInput) < limit { // no need to thin out.
 		return
 	}
 	rand.Shuffle(len(resp.MissingInput), func(i, j int) {
@@ -1422,7 +1419,7 @@ func (r *request) uploadBlobs(ctx context.Context, blobs []*rpb.Digest) (*gomapb
 			if len(missingInputs) > 0 {
 				r.gomaResp.MissingInput = missingInputs
 				r.gomaResp.MissingReason = missingReason
-				thinOutMissing(r.gomaResp, missingInputLimit)
+				thinOutMissing(r.gomaResp, r.f.MissingInputLimit)
 				sortMissing(r.gomaReq.Input, r.gomaResp)
 				logFileList(logger, "missing inputs", r.gomaResp.MissingInput)
 				return r.gomaResp, nil

@@ -403,6 +403,76 @@ func TestAdapterHandleMissingInputContents(t *testing.T) {
 	}
 }
 
+func TestAdapterHandleMissingInputLimit(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cluster := &fakeCluster{
+		rbe: newFakeRBE(),
+	}
+	err := cluster.setup(ctx, cluster.rbe.instancePrefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cluster.teardown()
+
+	clang := newFakeClang(&cluster.cmdStorage, "1234", "x86-64-linux-gnu")
+
+	err = cluster.pushToolchains(ctx, clang)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var localFiles fakeLocalFiles
+	localFiles.Add("/b/c/w/src/a.cc", randomSize())
+	localFiles.Add("/b/c/w/include/b.h", randomSize())
+	localFiles.Add("/b/c/w/include/c.h", randomSize())
+
+	req := &gomapb.ExecReq{
+		CommandSpec: clang.CommandSpec("clang", "bin/clang"),
+		Arg: []string{
+			"bin/clang", "-I../../include",
+			"-c", "../../src/a.cc",
+		},
+		Env: []string{},
+		Cwd: proto.String("/b/c/w/out/Release"),
+		Input: []*gomapb.ExecReq_Input{
+			// client sends hash only (fc==nil).
+			localFiles.mustInput(ctx, t, nil, "/b/c/w/src/a.cc", "../../src/a.cc"),
+			localFiles.mustInput(ctx, t, nil, "/b/c/w/include/b.h", "../../include/b.h"),
+			localFiles.mustInput(ctx, t, nil, "/b/c/w/include/c.h", "../../include/c.h"),
+		},
+		Subprogram:    []*gomapb.SubprogramSpec{},
+		RequesterInfo: &gomapb.RequesterInfo{},
+		HermeticMode:  proto.Bool(true),
+	}
+
+	t.Logf("call without limit")
+	resp, err := cluster.adapter.Exec(ctx, req)
+	if err != nil {
+		t.Fatalf("Exec(ctx, req)=%v; %v; want nil error", resp, err)
+	}
+	if resp.GetError() != gomapb.ExecResp_OK {
+		t.Errorf("Exec error=%v; want=%v", resp.GetError(), gomapb.ExecResp_OK)
+	}
+	if len(resp.MissingInput) != len(req.Input) {
+		t.Errorf("missing=%d; want=%d", len(resp.MissingInput), len(req.Input))
+	}
+
+	t.Logf("call with limit")
+	cluster.adapter.MissingInputLimit = 2
+	resp, err = cluster.adapter.Exec(ctx, req)
+	if err != nil {
+		t.Fatalf("Exec(ctx, req)=%v; %v; want nil error", resp, err)
+	}
+	if resp.GetError() != gomapb.ExecResp_OK {
+		t.Errorf("Exec error=%v; want=%v", resp.GetError(), gomapb.ExecResp_OK)
+	}
+	if len(resp.MissingInput) != cluster.adapter.MissingInputLimit {
+		t.Errorf("missing=%d; want=%d", len(resp.MissingInput), cluster.adapter.MissingInputLimit)
+	}
+}
+
 func TestAdapterHandleSameCwdAndInputRoot(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

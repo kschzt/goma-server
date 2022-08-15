@@ -120,6 +120,11 @@ type Adapter struct {
 	// sha256 file hash to disable hardening.
 	DisableHardenings []string
 
+	// MissingInputLimit is the maximum number of missing inputs to list in
+	// a response. If there are more, the server randomly picks this many
+	// inputs to respond with. 0 indicates no limit.
+	MissingInputLimit int
+
 	capMu        sync.Mutex
 	capabilities *rpb.ServerCapabilities
 }
