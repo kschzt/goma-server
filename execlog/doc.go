@@ -4,6 +4,5 @@
 
 /*
 Package execlog provides goma execlog service implementation.
-
 */
 package execlog

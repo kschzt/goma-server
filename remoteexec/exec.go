@@ -1069,9 +1069,11 @@ func buildArgs(ctx context.Context, cmdConfig *cmdpb.Config, arg0 string, req *g
 			switch {
 			case strings.HasPrefix(e, "INCLUDE="):
 				includes := strings.Split(strings.TrimPrefix(e, "INCLUDE="), ";")
+				var imsvcArgs []string
 				for _, inc := range includes {
-					args = append(args, "-imsvc"+winpath.ToPosix(inc))
+					imsvcArgs = append(imsvcArgs, "-imsvc"+winpath.ToPosix(inc))
 				}
+				args = addFlagsToArgs(args, imsvcArgs...)
 			case strings.HasPrefix(e, "LIB="):
 				// unnecessary?
 			default:
@@ -1086,6 +1088,18 @@ func buildArgs(ctx context.Context, cmdConfig *cmdpb.Config, arg0 string, req *g
 	return args
 }
 
+func addFlagsToArgs(args []string, flagArgs ...string) []string {
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--" {
+			// we should add flags before --
+			// append to empty slice to avoid overwriting after args[i:]
+			return append(append(append([]string{}, args[:i]...), flagArgs...), args[i:]...)
+		}
+	}
+	// -- is not used
+	return append(args, flagArgs...)
+}
+
 // add target option to args if args doesn't already have target option.
 func addTargetIfNotExist(args []string, target string) []string {
 	// no need to add -target if arg already have it.
@@ -1097,7 +1111,10 @@ func addTargetIfNotExist(args []string, target string) []string {
 	// https://clang.llvm.org/docs/CrossCompilation.html says
 	// `-target <triple>`, but clang --help shows
 	//  --target=<value>        Generate code for the given target
-	return append(args, fmt.Sprintf("--target=%s", target))
+	// add --target at front, not at end
+	// if it is after "--", it would fail "no such file or directory: `--target=xxx`"
+	// since we're setting default target, it's fine to set flag just after command name.
+	return append([]string{args[0], fmt.Sprintf("--target=%s", target)}, args[1:]...)
 }
 
 func targetFromArgs(args []string) string {

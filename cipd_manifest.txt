@@ -13,7 +13,7 @@ $VerifiedPlatform linux-amd64
 # https://chrome-infra-packages.appspot.com/
 
 # go
-infra/3pp/tools/go/${platform} version:2@1.18.1
+infra/3pp/tools/go/${platform} version:2@1.19
 
 # protoc
-infra/3pp/tools/protoc/${platform} version:2@3.19.4
+infra/3pp/tools/protoc/${platform} version:2@21.5

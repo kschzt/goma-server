@@ -7,8 +7,7 @@ Binary goma_replay is a simple goma client for load testing etc.
 
 "dump exec_req" on goma client, and run
 
- $ goma_replay -n 100 -l 100
-
+	$ goma_replay -n 100 -l 100
 */
 package main
 

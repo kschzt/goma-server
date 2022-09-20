@@ -4,6 +4,5 @@
 
 /*
 Package command manages commands/toolchains.
-
 */
 package command

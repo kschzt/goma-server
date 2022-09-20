@@ -4,7 +4,6 @@
 
 /*
 Package enduser manages end user information with context.
-
 */
 package enduser
 

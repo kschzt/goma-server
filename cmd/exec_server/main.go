@@ -4,7 +4,6 @@
 
 /*
 Binary exec_server provides goma exec service via gRPC.
-
 */
 package main
 

@@ -4,7 +4,6 @@
 
 /*
 Binary remoteexec-proxy is a proxy server between Goma client and Remote Execution API.
-
 */
 package main
 

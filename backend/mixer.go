@@ -150,8 +150,9 @@ func (m Mixer) dispatcher(handler func(Backend) http.Handler) http.Handler {
 			if err != nil {
 				code := http.StatusUnauthorized
 				// Making the client to retry with the refreshed token instead of throttling.
-				// Please see (b/150189886) for details.
-				if err == auth.ErrExpired {
+				// Please see (b/150189886 and http://b/230568560) for details.
+				switch err {
+				case auth.ErrExpired, auth.ErrInternal:
 					code = http.StatusServiceUnavailable
 				}
 				http.Error(w, "The request requires user authentication", code)

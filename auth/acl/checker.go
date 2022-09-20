@@ -176,7 +176,7 @@ func checkGroup(ctx context.Context, tokenInfo *auth.TokenInfo, g *pb.Group, aut
 			return false, err
 		}
 		if !ok {
-			logger.Debugf("not member in authdb group:%", g.Id)
+			logger.Debugf("not member in authdb group:%s", g.Id)
 		}
 		return ok, nil
 	}

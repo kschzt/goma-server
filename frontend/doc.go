@@ -4,6 +4,5 @@
 
 /*
 Package frontend is goma service frontend (/cxx-compiler-service/*).
-
 */
 package frontend

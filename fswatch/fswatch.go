@@ -4,7 +4,6 @@
 
 /*
 Package fswatch watches directory with fsnotify.
-
 */
 package fswatch
 

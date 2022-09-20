@@ -5,8 +5,10 @@
 package descriptor
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"google.golang.org/protobuf/testing/protocmp"
 
 	pb "go.chromium.org/goma/server/proto/command"
 )
@@ -129,7 +131,7 @@ func TestRelocateCmd(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(cmdFiles, want) {
+	if !cmp.Equal(cmdFiles, want, protocmp.Transform()) {
 		t.Errorf("RelocateCmd(%q, %q, %q)=%v; want=%v", reqCmdPath, cs, subprogSetups, cmdFiles, want)
 	}
 }
@@ -185,7 +187,7 @@ func TestRelocateCmdSubprog(t *testing.T) {
 		},
 	}
 
-	if !reflect.DeepEqual(got, want) {
+	if !cmp.Equal(got, want, protocmp.Transform()) {
 		t.Errorf("RelocateCmd(%q, %q, %q)=_, %v, nil; want=_, %v, nil", reqCmdPath, cs, subprogSetups, got, want)
 	}
 }

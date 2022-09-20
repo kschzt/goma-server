@@ -13,7 +13,7 @@ import (
 
 const (
 	// same as default sampler
-	// https://github.com/census-instrumentation/opencensus-go/blob/master/trace/sampling.go#L21
+	// https://github.com/census-instrumentation/opencensus-go/blob/052120675fac2ace91dc2c01e5f63c3e6ec62f04/trace/sampling.go#L21
 	DefaultTraceFraction = 1e-4
 
 	// trace API limit is 4800/minutes.

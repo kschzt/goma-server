@@ -5,7 +5,7 @@
 /*
 Package rpc provides goma specific rpc features on gRPC.
 
-Load balancing RPC client
+# Load balancing RPC client
 
 gRPC doesn't provide good loadbalancing client (for kubernetes, yet).
 Typical gRPC client could be created as follows:

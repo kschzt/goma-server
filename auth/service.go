@@ -83,15 +83,15 @@ func (s *Service) scheduledRun(t time.Time, f func()) {
 // replies end user information.
 //
 // TODO: find answers to following questions.
-// 1. can auth server return expired token? (currently yes)
-// 2. should auth server refresh expired token? (currently no)
-// 3. should grpc status code represent status of request or access token?
-// 4. how error description should be handled?
-//    currently, it is stored in cache but not used by anybody.
-// 5. should auth server create go routine for each token to expire the entry?
-//    (currently yes)
-// 6. how do we implement quota?
-// 7. how do we integrate auth server with chrome-infra-auth?
+//  1. can auth server return expired token? (currently yes)
+//  2. should auth server refresh expired token? (currently no)
+//  3. should grpc status code represent status of request or access token?
+//  4. how error description should be handled?
+//     currently, it is stored in cache but not used by anybody.
+//  5. should auth server create go routine for each token to expire the entry?
+//     (currently yes)
+//  6. how do we implement quota?
+//  7. how do we integrate auth server with chrome-infra-auth?
 func (s *Service) Auth(ctx context.Context, req *authpb.AuthReq) (*authpb.AuthResp, error) {
 	logger := log.FromContext(ctx)
 	token, err := parseToken(req.Authorization)
@@ -178,13 +178,14 @@ func (s *Service) Auth(ctx context.Context, req *authpb.AuthReq) (*authpb.AuthRe
 			errorDescription = st.Message()
 			logger.Errorf("token info %q permission denied: %v", te.Group, te.TokenInfo.Err)
 		default:
-			errorDescription = "internal error"
+			// no need to record error state
 			logger.Errorf("token info %q error: %v", te.Group, te.TokenInfo.Err)
+			return nil, grpc.Errorf(st.Code(), "token info %q error: %v", te.Group, te.TokenInfo.Err)
 		}
 	} else {
 		// non grpc error.
-		errorDescription = "internal error"
 		logger.Errorf("token info %q error: %v", te.Group, te.TokenInfo.Err)
+		return nil, grpc.Errorf(codes.Internal, "token info %q error: %v", te.Group, te.TokenInfo.Err)
 	}
 
 	resp := &authpb.AuthResp{

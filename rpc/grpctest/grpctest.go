@@ -4,7 +4,6 @@
 
 /*
 Package grpctest provides a test server for unit tests that use gRPC.
-
 */
 package grpctest
 

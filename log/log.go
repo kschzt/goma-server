@@ -4,7 +4,6 @@
 
 /*
 Package log provides logging mechanism for goma servers.
-
 */
 package log
 
@@ -37,7 +36,8 @@ var (
 
 // SetZapLogger sets zap logger as default logger.
 // Useful for test
-//   log.SetZapLogger(zap.NewExample())
+//
+//	log.SetZapLogger(zap.NewExample())
 func SetZapLogger(zapLogger *zap.Logger) {
 	logger = zapLogger
 	grpcLogger = zapLogger.WithOptions(zap.AddCallerSkip(2))

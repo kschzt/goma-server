@@ -248,7 +248,8 @@ func newFakeClangCL(f *fakeCmdStorage, version string) *fakeToolchain {
 					PathType: cpb.CmdDescriptor_POSIX,
 				},
 				Cross: &cpb.CmdDescriptor_Cross{
-					WindowsCross: true,
+					ClangNeedTarget: true,
+					WindowsCross:    true,
 				},
 			},
 		},

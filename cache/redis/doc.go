@@ -4,6 +4,5 @@
 
 /*
 Package redis provides cache service by redis (cloud memorystore).
-
 */
 package redis

@@ -4,6 +4,5 @@
 
 /*
 Package backend is goma service backend of /cxx-compiler-service/*.
-
 */
 package backend

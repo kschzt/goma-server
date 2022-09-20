@@ -4,7 +4,6 @@
 
 /*
 Binary auth_server provides auth service via gRPC.
-
 */
 package main
 

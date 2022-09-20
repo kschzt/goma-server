@@ -4,7 +4,6 @@
 
 /*
 Binary file_server provides goma file service via gRPC.
-
 */
 package main
 

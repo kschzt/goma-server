@@ -332,8 +332,10 @@ func clangclArgRelocatable(filepath clientFilePath, args []string) error {
 
 // clangclOutputs returns output files from clang-cl command line.
 // https://clang.llvm.org/docs/UsersManual.html#id8
-//  /Fo<obj> and /Fd<pdb> is used in Cross-compiling Chrome/win
-//  but clang-cl currently doesn't emit pdb.
+//
+//	/Fo<obj> and /Fd<pdb> is used in Cross-compiling Chrome/win
+//	but clang-cl currently doesn't emit pdb.
+//
 // https://chromium.googlesource.com/chromium/src/+/lkcr/docs/win_cross.md
 // TODO: support output directory (ends in / or \)?
 func clangclOutputs(args []string) []string {

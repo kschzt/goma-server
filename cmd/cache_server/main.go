@@ -4,7 +4,6 @@
 
 /*
 Binary cache_server provides cache service via gRPC.
-
 */
 package main
 

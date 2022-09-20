@@ -4,6 +4,5 @@
 
 /*
 Package gcs provides cache service by google cloud storage.
-
 */
 package gcs

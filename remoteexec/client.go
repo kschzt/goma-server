@@ -25,12 +25,12 @@ import (
 // Client is a remoteexec API client to ClientConn.
 // CallOptions will be added when calling RPC.
 //
-//  prcred, _ := oauth.NewApplicationDefault(ctx,
-//     "https://www.googleapis.com/auth/cloud-build-service")
-//  conn, _ := grpc.DialContext(ctx, target,
-//    grpc.WithPerRPCCredentials(prcred),
-//    grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-//  client := &remoteexec.Client{conn}
+//	prcred, _ := oauth.NewApplicationDefault(ctx,
+//	   "https://www.googleapis.com/auth/cloud-build-service")
+//	conn, _ := grpc.DialContext(ctx, target,
+//	  grpc.WithPerRPCCredentials(prcred),
+//	  grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+//	client := &remoteexec.Client{conn}
 type Client struct {
 	*grpc.ClientConn
 	CallOptions []grpc.CallOption

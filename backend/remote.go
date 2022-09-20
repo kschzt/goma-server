@@ -7,6 +7,7 @@ package backend
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -61,7 +62,8 @@ func FromRemoteBackend(ctx context.Context, cfg *pb.RemoteBackend, opt Option) (
 	logger.Infof("api_config=%s", ac)
 	grpcInt := balancer.NewGCPInterceptor(ac)
 	opts = append(opts,
-		grpc.WithBalancerName(balancer.Name),
+		grpc.WithDisableServiceConfig(),
+		grpc.WithDefaultServiceConfig(fmt.Sprintf(`{"loadBalancingConfig": [{%q:{}}]}`, balancer.Name)),
 		grpc.WithUnaryInterceptor(grpcInt.GCPUnaryClientInterceptor),
 		grpc.WithStreamInterceptor(grpcInt.GCPStreamClientInterceptor))
 

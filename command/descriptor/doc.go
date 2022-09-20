@@ -4,6 +4,5 @@
 
 /*
 Package descriptor provides command descriptor utilities.
-
 */
 package descriptor

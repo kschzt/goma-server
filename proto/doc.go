@@ -6,19 +6,18 @@
 //
 // Standard goma APIs
 //
-//  api: package api defines data used on goma APIs.
-//  exec: package exec defines exec_service (/cxx-compiler-service/{e,me})
-//  file: package file defines file_service (/cxx-compiler-service/{l,s})
-//  execlog: package execlog defines log_service (/cxx-compiler-service/sl)
+//	api: package api defines data used on goma APIs.
+//	exec: package exec defines exec_service (/cxx-compiler-service/{e,me})
+//	file: package file defines file_service (/cxx-compiler-service/{l,s})
+//	execlog: package execlog defines log_service (/cxx-compiler-service/sl)
 //
 // New (internal) APIs
 //
-//  cache: package cache defines cache_service, backend of exec_service,
-//            file_service etc.
+//	cache: package cache defines cache_service, backend of exec_service,
+//	file_service etc.
 //
-//  command: package command defines data and service to run command in
-//    isolated environment.
-//
+//	command: package command defines data and service to run command in
+//	isolated environment.
 package proto
 
 //go:generate ./gen_protoc-gen-go

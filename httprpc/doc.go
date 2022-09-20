@@ -4,7 +4,6 @@
 
 /*
 Package httprpc provides goma httprpc implementation.
-
 */
 package httprpc
 

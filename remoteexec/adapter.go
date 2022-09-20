@@ -165,7 +165,7 @@ func (f *Adapter) withRequestMetadata(ctx context.Context, reqInfo *gomapb.Reque
 		return nil, err
 	}
 	// https://github.com/bazelbuild/remote-apis/blob/a5c577357528b33a4adff88c0c7911dd086c6923/build/bazel/remote/execution/v2/remote_execution.proto#L1460
-	// https://github.com/grpc/grpc-go/blob/master/Documentation/grpc-metadata.md#storing-binary-data-in-metadata
+	// https://github.com/grpc/grpc-go/blob/a094a1095c07d37362f7ab37b92a6aa46c2d8b07/Documentation/grpc-metadata.md#storing-binary-data-in-metadata
 	return metadata.AppendToOutgoingContext(ctx,
 		"build.bazel.remote.execution.v2.requestmetadata-bin",
 		string(b)), nil
@@ -339,8 +339,8 @@ func (s *execSpan) Do(ctx context.Context, desc string, d time.Duration, f func(
 // Exec handles goma Exec requests with remoteexec backend.
 //
 //  1. compute input tree and Action.
-//  1.1 construct input tree from req.
-//  1.2. construct Action message from req.
+//     1.1. construct input tree from req.
+//     1.2. construct Action message from req.
 //  2. checks the ActionCache using GetActionResult. if hit, go to 7.
 //  3. queries the ContentAddressableStorage using FindMissingBlobs
 //  4. uploads any missing blobs to the ContentAddressableStorage
@@ -352,8 +352,8 @@ func (s *execSpan) Do(ctx context.Context, desc string, d time.Duration, f func(
 //     it does not already have;
 //     embed it in response, or will serve it by LookupFile later
 //  9. job is complete
-//  9.1  convert ExecResp from ExecuteResponse.
-//       for small outputs, embed in resp. otherwise use FILE_META.
+//     9.1.  convert ExecResp from ExecuteResponse.
+//     for small outputs, embed in resp. otherwise use FILE_META.
 func (f *Adapter) Exec(ctx context.Context, req *gomapb.ExecReq) (resp *gomapb.ExecResp, err error) {
 	ctx, span := trace.StartSpan(ctx, "go.chromium.org/goma/server/remoteexec.Adapter.Exec")
 	defer span.End()

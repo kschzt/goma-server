@@ -225,14 +225,8 @@ func TestAuth(t *testing.T) {
 		},
 	}
 	resp, err = s2.Auth(context.Background(), req)
-	if err != nil {
-		t.Errorf("Auth(%q) error %v; want nil error", req, err)
-	}
-	if resp.Quota != 0 {
-		t.Errorf("Auth(%q).Quota=%d; want 0", req, resp.Quota)
-	}
-	if resp.ErrorDescription == "" {
-		t.Errorf("Auth(%q).ErrorDescription=%q; want non empty", req, resp.ErrorDescription)
+	if status.Code(err) != codes.Internal {
+		t.Errorf("Auth(%q) error %v; want internal error", req, err)
 	}
 
 	t.Logf("3. non-allowed user access")

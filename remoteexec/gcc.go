@@ -45,21 +45,23 @@ var pathFlags = []string{
 // The request will NOT be relocatable, that is, generate
 // outputs that would contain absolute path names (DW_AT_comp_dir etc),
 // if
-//  debug build (-g* except -g0) -> DW_AT_comp_dir or other filepaths.
-//    this will be canceled by -fdebug-compilation-dir
-//  --pnacl-allow-translate  crbug.com/685461
+//
+//	debug build (-g* except -g0) -> DW_AT_comp_dir or other filepaths.
+//	  this will be canceled by -fdebug-compilation-dir
+//	--pnacl-allow-translate  crbug.com/685461
 //
 // The following flags would NOT be relocatable
-//  absolute input filename (debug build)
-//      *.d file output will not be cwd-agnostic.
-//      DW_AT_name (debug build)
-//  -I<path>
-//      *.d file output will not be cwd-agnostic.
-//      directory table in debug info (debug build)
-//  -B<path>
-//  -isystem<path> --sysroot=<path>
-//  ...
-//  TODO: these could be normalized to cwd relative?
+//
+//	absolute input filename (debug build)
+//	    *.d file output will not be cwd-agnostic.
+//	    DW_AT_name (debug build)
+//	-I<path>
+//	    *.d file output will not be cwd-agnostic.
+//	    directory table in debug info (debug build)
+//	-B<path>
+//	-isystem<path> --sysroot=<path>
+//	...
+//	TODO: these could be normalized to cwd relative?
 //
 // ref:
 // https://docs.google.com/spreadsheets/d/1_-ZJhqy7WhSFYuZU2QkmQ4Ed9182bWfKg09EfBAkVf8/edit#gid=759603323
@@ -186,6 +188,7 @@ Loop:
 		case arg == "-Qunused-arguments":
 		case arg == "-static-libgcc":
 		case strings.HasPrefix(arg, "--rtlib="):
+		case strings.HasPrefix(arg, "--unwindlib="):
 			continue
 
 		case arg == "-o":

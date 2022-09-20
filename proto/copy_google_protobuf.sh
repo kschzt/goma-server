@@ -24,7 +24,15 @@ case "${protocpath}" in
 
 *)
   # cipd package (used in presubmit builder)
-  incdir="$(dirname "${protocpath}")/.cipd_bin/include/google/protobuf"
+  cipd_bin_path="$(dirname ${protocpath})"
+  while [ "$(basename $cipd_bin_path)" != ".cipd_bin" ]; do
+    if [ "$cipd_bin_path" = "/" ]; then
+      echo "protoc is not in cipd $protocpath"
+      exit 1
+    fi
+    cipd_bin_path="$(dirname $cipd_bin_path)"
+  done
+  incdir="${cipd_bin_path}/include/google/protobuf"
   ;;
 esac
 cp "${incdir}/timestamp.proto" ./google/protobuf/timestamp.proto

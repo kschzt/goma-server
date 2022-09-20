@@ -4,6 +4,5 @@
 
 /*
 Package auth provides authentication service.
-
 */
 package auth

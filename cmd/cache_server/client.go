@@ -6,8 +6,8 @@
 
 // client.go is sample client of cache server.
 //
-//  $ go run client.go 'host:port' get 'key'
-//  $ go run client.go 'host:port' put 'key' < value
+//	$ go run client.go 'host:port' get 'key'
+//	$ go run client.go 'host:port' put 'key' < value
 package main
 
 import (

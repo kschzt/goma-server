@@ -522,6 +522,12 @@ func TestGccRelocatableReq(t *testing.T) {
 				"--rtlib=libgcc"),
 			relocatable: true,
 		},
+		{
+			desc: "clang --unwindlib=",
+			args: append(append([]string{}, baseReleaseArgs...),
+				"--unwindlib=libunwind"),
+			relocatable: true,
+		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := gccRelocatableReq(posixpath.FilePath{}, tc.args, tc.envs)

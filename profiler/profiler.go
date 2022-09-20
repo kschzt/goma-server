@@ -13,7 +13,6 @@ import (
 	gce "cloud.google.com/go/compute/metadata"
 	"cloud.google.com/go/profiler"
 	"google.golang.org/api/option"
-	"google.golang.org/grpc"
 
 	"go.chromium.org/goma/server/log"
 )
@@ -33,7 +32,7 @@ func Setup(ctx context.Context) {
 		logger.Infof("profiler target name: %s", target)
 		err = profiler.Start(profiler.Config{Service: target},
 			// Disallow grpc in google-api-go-client to send stats/trace of profiler grpc's api call.
-			option.WithGRPCDialOption(grpc.WithStatsHandler(nil)))
+			option.WithTelemetryDisabled())
 		if err != nil {
 			logger.Errorf("failed to start cloud profiler: %v", err)
 		}

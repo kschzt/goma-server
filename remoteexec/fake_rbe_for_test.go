@@ -143,7 +143,7 @@ func defaultCapabilities() *rpb.ServerCapabilities {
 	// high_api_version:<major:2 >
 	return &rpb.ServerCapabilities{
 		CacheCapabilities: &rpb.CacheCapabilities{
-			DigestFunction: []rpb.DigestFunction_Value{
+			DigestFunctions: []rpb.DigestFunction_Value{
 				rpb.DigestFunction_SHA256,
 			},
 			ActionCacheUpdateCapabilities: &rpb.ActionCacheUpdateCapabilities{

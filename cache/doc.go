@@ -4,6 +4,5 @@
 
 /*
 Package cache provides cache service.
-
 */
 package cache

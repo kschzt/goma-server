@@ -18,7 +18,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/trace"
 	"google.golang.org/api/option"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -58,8 +57,8 @@ func Init(ctx context.Context, projectID, name string) error {
 			MonitoredResource: monitoredresource.Autodetect(),
 
 			// Disallow grpc in google-api-go-client to send stats/trace of monitoring grpc's api call.
-			MonitoringClientOptions: []option.ClientOption{option.WithGRPCDialOption(grpc.WithStatsHandler(nil))},
-			TraceClientOptions:      []option.ClientOption{option.WithGRPCDialOption(grpc.WithStatsHandler(nil))},
+			MonitoringClientOptions: []option.ClientOption{option.WithTelemetryDisabled()},
+			TraceClientOptions:      []option.ClientOption{option.WithTelemetryDisabled()},
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create exporter: %v", err)

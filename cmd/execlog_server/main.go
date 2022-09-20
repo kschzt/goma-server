@@ -4,7 +4,6 @@
 
 /*
 Binary execlog_server provides goma execlog service via gRPC.
-
 */
 package main
 

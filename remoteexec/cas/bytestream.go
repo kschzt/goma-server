@@ -82,6 +82,10 @@ func UploadResName(instance string, digest *rpb.Digest) string {
 	return path.Join(instance, "uploads", uuid.String(), "blobs", digest.Hash, strconv.FormatInt(digest.SizeBytes, 10))
 }
 
+type ioReader struct {
+	io.Reader
+}
+
 // Upload uploads blob specified by resname from rd.
 func Upload(ctx context.Context, bs bpb.ByteStreamClient, resname string, size int64, rd io.Reader) error {
 	span := trace.FromContext(ctx)
@@ -95,7 +99,8 @@ func Upload(ctx context.Context, bs bpb.ByteStreamClient, resname string, size i
 		return status.Errorf(s.Code(), "upload write %s: %v", resname, s.Message())
 	}
 	t0 := time.Now()
-	written, err := ioCopyBuffer(wr, rd)
+	// drop WriteTo method in rd.
+	written, err := ioCopyBuffer(wr, ioReader{rd})
 	if err != nil {
 		wr.Close()
 		logger.Warnf("upload failed %s %d in %s: %v", resname, written, time.Since(t0), err)
@@ -130,6 +135,10 @@ func ResName(instance string, digest *rpb.Digest) string {
 	return path.Join(instance, "blobs", digest.Hash, strconv.FormatInt(digest.SizeBytes, 10))
 }
 
+type ioWriter struct {
+	io.Writer
+}
+
 // Download downloads blob specified by resname into w.
 func Download(ctx context.Context, bs bpb.ByteStreamClient, wr io.Writer, resname string) (int64, error) {
 	span := trace.FromContext(ctx)
@@ -143,7 +152,8 @@ func Download(ctx context.Context, bs bpb.ByteStreamClient, wr io.Writer, resnam
 		s := status.Convert(err)
 		return 0, status.Errorf(s.Code(), "download read: %s: %v", resname, s.Message())
 	}
-	written, err := ioCopyBuffer(wr, rd)
+	// drop ReadFrom method in wr
+	written, err := ioCopyBuffer(ioWriter{wr}, rd)
 	if err != nil {
 		logger.Warnf("download failed %s %d in %s: %v", resname, written, time.Since(t), err)
 		s := status.Convert(err)

@@ -5,8 +5,7 @@
 /*
 Binary frontend is goma frontend.
 
- $ frontend --port $port
-
+	$ frontend --port $port
 */
 package main
 
@@ -128,6 +127,10 @@ func main() {
 		logger.Fatal(err)
 	}
 	err = view.Register(frontend.DefaultViews...)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	err = view.Register(auth.DefaultViews...)
 	if err != nil {
 		logger.Fatal(err)
 	}

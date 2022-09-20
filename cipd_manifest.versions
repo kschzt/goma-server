@@ -2,9 +2,9 @@
 # Do not modify manually. All changes will be overwritten.
 
 infra/3pp/tools/go/linux-amd64
-	version:2@1.18.1
-	aR3SuYvnXhBopeQKYDGgakwBg5cSmdM7FMe79Wi9uVwC
+	version:2@1.19
+	WiUeETHjxu9f3WvKdcFgsqdN2PJCJEzr3w4RAVdPqMYC
 
 infra/3pp/tools/protoc/linux-amd64
-	version:2@3.19.4
-	PXupdd2Pp_925ne_qf0ExEukmvjnoHgmxRpMFFN7IdEC
+	version:2@21.5
+	ng2vI2XfV8bpNOGJYVhP1stpF5eTXVBngHTOZShfuUcC

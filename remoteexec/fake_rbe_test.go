@@ -327,7 +327,11 @@ func bytestreamUpload(ctx context.Context, client bpb.ByteStreamClient, resname 
 	if err != nil {
 		return err
 	}
-	_, err = io.Copy(wr, rd)
+	// limit 2MB buffer.
+	buf := make([]byte, 2*1024*1024)
+	// drop WriteTo method in rd.
+	type ioReader struct{ io.Reader }
+	_, err = io.CopyBuffer(wr, ioReader{rd}, buf)
 	if err != nil {
 		wr.Close()
 		return err

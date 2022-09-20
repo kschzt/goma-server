@@ -680,16 +680,16 @@ func ClexeTarget(out []byte) (string, error) {
 //
 // `clang-cl -###` output is like the following:
 //
-//   clang version 3.5.0 (trunk 225621)
-//   Target: i686-pc-windows-msvc
+//	clang version 3.5.0 (trunk 225621)
+//	Target: i686-pc-windows-msvc
 //
-//   clang version 6.0.0 (trunk 308728)
-//   Target: x86_64-pc-windows-msvc
+//	clang version 6.0.0 (trunk 308728)
+//	Target: x86_64-pc-windows-msvc
 //
-//   clang version 9.0.0 (https://github.com/llvm/llvm-project/ 67510fac36d27b2e22c7cd955fc167136b737b93)
-//   Target: x86_64-pc-windows-msvc
-//   Thread model: posix
-//   InstalledDir: /var/tmp/clang/third_party/llvm-build/Release+Asserts/bin
+//	clang version 9.0.0 (https://github.com/llvm/llvm-project/ 67510fac36d27b2e22c7cd955fc167136b737b93)
+//	Target: x86_64-pc-windows-msvc
+//	Thread model: posix
+//	InstalledDir: /var/tmp/clang/third_party/llvm-build/Release+Asserts/bin
 //
 // Note that endline might be CRLF.
 func ClangClVersion(out []byte) (string, error) {

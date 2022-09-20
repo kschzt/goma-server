@@ -4,6 +4,5 @@
 
 /*
 Package normalizer provides functions to normalize target.
-
 */
 package normalizer

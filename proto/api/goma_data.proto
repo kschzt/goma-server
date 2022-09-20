@@ -189,7 +189,7 @@ message RequesterInfo {
   // Client should set unique identifier of the build in this field.
   //
   // Note to LUCI users: since there could be multiple compile steps for
-  //                     recipes, you cannot use buildbucket build_id here.
+  // recipes, you cannot use buildbucket build_id here.
   optional string build_id = 9;
 
   // Requester's dimensions. Each dimension is a "<key>:<value>" pair.

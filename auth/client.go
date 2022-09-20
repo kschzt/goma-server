@@ -9,9 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
+	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.opencensus.io/trace"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
@@ -20,6 +24,31 @@ import (
 	"go.chromium.org/goma/server/log"
 	authpb "go.chromium.org/goma/server/proto/auth"
 	"go.chromium.org/goma/server/rpc"
+)
+
+var (
+	authRequests = stats.Int64(
+		"go.chromium.org/goma/server/auth.auth",
+		"Number of auth requests",
+		stats.UnitDimensionless)
+
+	accountKey = tag.MustNewKey("account")
+	authErrKey = tag.MustNewKey("auth_error")
+
+	// DefaultViews are the default views provided by this package.
+	// You need to register the view for data to actually be collected.
+	DefaultViews = []*view.View{
+		{
+			Name:        "go.chromium.org/goma/server/auth.auth_by_account",
+			Description: "auth request count by account",
+			TagKeys: []tag.Key{
+				accountKey,
+				authErrKey,
+			},
+			Measure:     authRequests,
+			Aggregation: view.Count(),
+		},
+	}
 )
 
 // ErrNoAuthHeader represents authentication failure due to lack of Authorization header in an HTTP request.
@@ -181,8 +210,39 @@ func (a *Auth) Check(ctx context.Context, req *http.Request) (*enduser.EndUser, 
 // Auth authenticates the requests and returns new context with enduser info.
 func (a *Auth) Auth(ctx context.Context, req *http.Request) (context.Context, error) {
 	u, err := a.Check(ctx, req)
+	recordAuth(ctx, u, err)
 	if err != nil {
 		return ctx, err
 	}
 	return enduser.NewContext(ctx, u), nil
+}
+
+func recordAuth(ctx context.Context, u *enduser.EndUser, err error) {
+	logger := log.FromContext(ctx)
+	var tags []tag.Mutator
+	switch {
+	case errors.Is(err, ErrNoAuthHeader):
+		tags = append(tags, tag.Upsert(authErrKey, "no-auth-header"))
+	case errors.Is(err, ErrInternal):
+		tags = append(tags, tag.Upsert(authErrKey, "internal"))
+	case errors.Is(err, ErrExpired):
+		tags = append(tags, tag.Upsert(authErrKey, "expired"))
+	case errors.Is(err, ErrOverQuota):
+		tags = append(tags, tag.Upsert(authErrKey, "over-quota"))
+	case err == nil:
+		tags = append(tags, tag.Upsert(authErrKey, "ok"))
+	default:
+		tags = append(tags, tag.Upsert(authErrKey, "unknown"))
+	}
+	if u == nil || string(u.Email) == "" {
+		tags = append(tags, tag.Upsert(accountKey, "unauthenticated"))
+	} else if strings.HasSuffix(string(u.Email), ".iam.gserviceaccount.com") {
+		tags = append(tags, tag.Upsert(accountKey, string(u.Email)))
+	} else {
+		// TODO: record personal account for user migration (need privacy review).
+		tags = append(tags, tag.Upsert(accountKey, "not-service-account"))
+	}
+	if err := stats.RecordWithTags(ctx, tags, authRequests.M(1)); err != nil {
+		logger.Errorf("failed to record metrics: %v", err)
+	}
 }

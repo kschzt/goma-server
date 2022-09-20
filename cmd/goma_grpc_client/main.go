@@ -5,8 +5,7 @@
 /*
 Binary goma_grpc_client is a simple gRPC client of goma api.
 
- $ goma_grpc_client [-api_key <key>] <addr> <service>.<method> <request>
-
+	$ goma_grpc_client [-api_key <key>] <addr> <service>.<method> <request>
 */
 package main
 

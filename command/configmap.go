@@ -95,9 +95,9 @@ type ConfigMapWatcher interface {
 // <bucket> is <project>-toolchain-config.
 // in the <bucket>
 //
-//  <runtime>/
-//           seq: text, sequence number.
-//           <prebuilt-item>/descriptors/<descriptorHash>: proto CmdDescriptor
+//	<runtime>/
+//	         seq: text, sequence number.
+//	         <prebuilt-item>/descriptors/<descriptorHash>: proto CmdDescriptor
 //
 // Watcher watches */seq files via default notification topic on the bucket.
 // Seqs and RuntimeConfigs will read ConfigMapFile everytime.

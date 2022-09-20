@@ -149,11 +149,11 @@ func (w *Writer) Close() error {
 		FinishWrite:  true,
 		// The client may leave 'data' empty.
 	})
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return err
 	}
 	resp, err := w.wr.CloseAndRecv()
-	if err != nil {
+	if err != nil && err != io.EOF {
 		return err
 	}
 	if resp.CommittedSize != w.offset {

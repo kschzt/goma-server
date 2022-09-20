@@ -759,10 +759,11 @@ func TestAdapterHandleCrossCompile(t *testing.T) {
 	}
 
 	wantArguments := []string{
-		"out/Release/run.sh", "bin/clang", "-I../../include",
+		"out/Release/run.sh", "bin/clang",
+		"--target=x86_64-apple-darwin10.6.0",
+		"-I../../include",
 		"-c", "../../src/hello.cc",
 		"-o", "hello.o",
-		"--target=x86_64-apple-darwin10.6.0",
 	}
 	if !reflect.DeepEqual(command.Arguments, wantArguments) {
 		t.Errorf("arguments: got=%q, want=%q", command.Arguments, wantArguments)

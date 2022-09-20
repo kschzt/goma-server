@@ -222,11 +222,12 @@ func osFamily(e *gomapb.ExecLog) string {
 }
 
 // SaveLog emits some metrics.
-//  * go.chromium.org/goma/execlog/requests
-//      {os_family, ,goma_error, compiler_proxy_error,
-//       cache_hit, depscache_used, local_run,
-//       exec_exit_status, exec_request_retry}
-//  * go.chromium.org/goma/execlog/handler_time
+//   - go.chromium.org/goma/execlog/requests
+//     {os_family, ,goma_error, compiler_proxy_error,
+//     cache_hit, depscache_used, local_run,
+//     exec_exit_status, exec_request_retry}
+//   - go.chromium.org/goma/execlog/handler_time
+//
 // TODO: implement saving logic to GCS?
 func (Service) SaveLog(ctx context.Context, req *gomapb.SaveLogReq) (*gomapb.SaveLogResp, error) {
 	logger := log.FromContext(ctx)
