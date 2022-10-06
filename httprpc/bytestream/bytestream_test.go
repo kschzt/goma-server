@@ -111,6 +111,9 @@ func (c *fakeByteStreamWriteClient) Send(req *pb.WriteRequest) error {
 
 func (c *fakeByteStreamWriteClient) CloseAndRecv() (*pb.WriteResponse, error) {
 	if !c.finish {
+		if _, ok := c.c.m[c.resname]; ok {
+			return nil, status.Errorf(codes.AlreadyExists, "resource already exists")
+		}
 		return nil, status.Errorf(codes.FailedPrecondition, "write not finished")
 	}
 	c.c.m[c.resname] = c.buf.String()

@@ -12,6 +12,8 @@ import (
 	"io"
 
 	pb "google.golang.org/genproto/googleapis/bytestream"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // Exists checks resource identified by resourceName exists in bytestream server.
@@ -104,6 +106,8 @@ type Writer struct {
 	ok bool
 }
 
+const maxChunkSizeBytes = 2 * 1024 * 1024
+
 // Write writes data to bytestream.
 // The maximum data chunk size would be determined by server side,
 // so don't pass larger chunk than maximum data chunk size.
@@ -114,20 +118,31 @@ func (w *Writer) Write(buf []byte) (int, error) {
 	if w.ok {
 		return len(buf), nil
 	}
-	err := w.wr.Send(&pb.WriteRequest{
-		ResourceName: w.resname,
-		WriteOffset:  w.offset,
-		Data:         buf,
-	})
-	if err == io.EOF {
-		// the blob already stored in CAS.
-		w.ok = true
-		return len(buf), nil
+	i := 0
+	for i < len(buf) {
+		end := i + maxChunkSizeBytes
+		if end > len(buf) {
+			end = len(buf)
+		}
+		err := w.wr.Send(&pb.WriteRequest{
+			ResourceName: w.resname,
+			WriteOffset:  w.offset,
+			Data:         buf[i:end],
+		})
+		if err == io.EOF {
+			_, err = w.wr.CloseAndRecv()
+			if err == nil || status.Convert(err).Code() == codes.AlreadyExists {
+				// the blob already stored in CAS.
+				w.ok = true
+				return len(buf), nil
+			}
+		}
+		if err != nil {
+			return 0, err
+		}
+		w.offset += int64(end - i)
+		i = end
 	}
-	if err != nil {
-		return 0, err
-	}
-	w.offset += int64(len(buf))
 	return len(buf), nil
 }
 
