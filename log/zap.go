@@ -76,6 +76,7 @@ func GRPCUnaryServerInterceptor(opts ...grpczap.Option) grpc.UnaryServerIntercep
 func zapConfig() zap.Config {
 	if !gce.OnGCE() {
 		zapCfg := zap.NewDevelopmentConfig()
+		zapCfg.Level = zap.NewAtomicLevelAt(zap.ErrorLevel)
 		zapCfg.DisableStacktrace = true
 		return zapCfg
 	}

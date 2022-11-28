@@ -857,7 +857,7 @@ func (r *request) newWrapperScript(ctx context.Context, cmdConfig *cmdpb.Config,
 			// effective for the same drive letter.
 			rootDir = winpath.ToPosix(rootDir)
 		}
-		r.addPlatformProperty(ctx, "InputRootAbsolutePath", rootDir)
+		// r.addPlatformProperty(ctx, "InputRootAbsolutePath", rootDir)
 		for _, e := range r.gomaReq.Env {
 			envs = append(envs, e)
 		}

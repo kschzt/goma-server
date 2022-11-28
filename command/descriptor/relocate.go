@@ -158,7 +158,7 @@ func RelocateCmd(cmdPath string, setup *pb.CmdDescriptor_Setup, subprogSetups ma
 		allRelocatedFileSpecs = append(allRelocatedFileSpecs, relocatedFileSpecs...)
 	} else {
 		cmdfile := proto.Clone(setup.CmdFile).(*pb.FileSpec)
-		cmdfile.Path = cmdPath
+		//cmdfile.Path = cmdPath
 		allRelocatedFileSpecs = append(allRelocatedFileSpecs,
 			cmdfile)
 		allRelocatedFileSpecs = append(allRelocatedFileSpecs,

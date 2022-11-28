@@ -185,20 +185,20 @@ func (in *Inventory) Configure(ctx context.Context, cfgs *cmdpb.ConfigResp) erro
 	newConfigs := make(map[string]map[selector]*cmdpb.Config)
 	var newPlatformConfigs []*platformConfig
 	for _, cfg := range cfgs.Configs {
+		dimensionSet := make(map[string]bool)
+		for _, d := range cfg.GetDimensions() {
+			dimensionSet[d] = true
+		}
+		newPlatformConfigs = append(newPlatformConfigs, &platformConfig{
+			dimensionSet:       dimensionSet,
+			remoteexecPlatform: cfg.GetRemoteexecPlatform(),
+			acl:                cfg.GetAcl(),
+		})
+		logger.Infof("configure platform config: %v", cfg)
 		// If RemoteexecPlatform exists but CmdDescriptor does not exists,
 		// this config is for arbitrary toolchain support.
 		// TODO: Split this from ConfigResp.Configs?
 		if cfg.CmdDescriptor == nil && cfg.RemoteexecPlatform != nil {
-			dimensionSet := make(map[string]bool)
-			for _, d := range cfg.GetDimensions() {
-				dimensionSet[d] = true
-			}
-			newPlatformConfigs = append(newPlatformConfigs, &platformConfig{
-				dimensionSet:       dimensionSet,
-				remoteexecPlatform: cfg.GetRemoteexecPlatform(),
-				acl:                cfg.GetAcl(),
-			})
-			logger.Infof("configure platform config: %v", cfg)
 			continue
 		}
 
